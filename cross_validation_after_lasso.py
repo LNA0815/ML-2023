@@ -122,7 +122,7 @@ from sklearn.model_selection import train_test_split
 To change the test size, change the variable "test_size":
 
 """
-test_size = 0.1
+test_size = 0.2
 
 X_train_dd5, X_test_dd5, y_train_dd5, y_test_dd5 = train_test_split(X_dd5, labels, test_size=test_size, random_state=42)
 
@@ -153,11 +153,7 @@ from sklearn.linear_model import Lasso
 #desired_total_variance = 0.8
 
 #%% Define variables
-threshold_corr = 0.52
-th = []   # Array for threshold to plot it in table
-means_dd7 = []
-stds_dd7 = []
-shapes = []
+threshold_corr = 0.53
 cvrange = np.arange(5, 10, 1)
 #alpharange = [10, 1, 0.1, 0.01, 0.001, 0.0001]
 alpharange = np.arange(0.6, 1.4, 0.1)
@@ -192,41 +188,45 @@ def createtable(ax, name, th, value_pcr, value_lasso):
 
 
 
+def evaluate(title, X_train, y_train):
+  means = []
+  stds = []
 
-#%% Removing Correlated Features
-# Berechnen der Korrelationsmatrix
-correlation_matrix = np.corrcoef(X_train_dd5, rowvar=False)
-# In rowvar=False, die Merkmale sind in den Spalten des Arrays
-# Erzeugen einer booleschen Maske für die obere Dreiecksmatrix der Korrelationsmatrix
-mask = np.triu(np.ones_like(correlation_matrix), k=1).astype(bool)
-# Finden von stark korrelierten Merkmalspaaren
-highly_correlated = np.where((correlation_matrix > threshold_corr) & (correlation_matrix < 1.0))
-# Entfernen der stark korrelierten Merkmale (falls gewünscht)
-X_train_corr_dd7 = np.delete(X_train_dd7, highly_correlated[0], axis=1)
-X_test_corr_dd7 = np.delete(X_test_dd7, highly_correlated[0], axis=1)
+  #%% Removing Correlated Features
+  # Berechnen der Korrelationsmatrix
+  correlation_matrix = np.corrcoef(X_train, rowvar=False)
+  # In rowvar=False, die Merkmale sind in den Spalten des Arrays
+  # Erzeugen einer booleschen Maske für die obere Dreiecksmatrix der Korrelationsmatrix
+  mask = np.triu(np.ones_like(correlation_matrix), k=1).astype(bool)
+  # Finden von stark korrelierten Merkmalspaaren
+  highly_correlated = np.where((correlation_matrix > threshold_corr) & (correlation_matrix < 1.0))
+  # Entfernen der stark korrelierten Merkmale (falls gewünscht)
+  X_train_corr = np.delete(X_train, highly_correlated[0], axis=1)
 
-for alpha in alpharange:
-    # use lasso
-    # Erstellen des Lasso-Modells mit dem aktuellen Alpha
-    lasso = Lasso(alpha=alpha)
-    
-    # Durchführung der k-Fachen Kreuzvalidierung (hier: 5-Fache)
-    rmse_scores = -cross_val_score(lasso, X_train_corr_dd7, y_train_dd5, scoring="neg_mean_squared_error", cv=cv)
-    
-    # Berechnen des Durchschnitts der RMSE-Werte für dieses Alpha
-    mean_rmse = np.mean(rmse_scores)
-    std_rmse = np.std(rmse_scores)
+  for alpha in alpharange:
+      # use lasso
+      # Erstellen des Lasso-Modells mit dem aktuellen Alpha
+      lasso = Lasso(alpha=alpha)
+      
+      # Durchführung der k-Fachen Kreuzvalidierung (hier: 5-Fache)
+      rmse_scores = -cross_val_score(lasso, X_train_corr, y_train, scoring="neg_mean_squared_error", cv=cv)
+      
+      # Berechnen des Durchschnitts der RMSE-Werte für dieses Alpha
+      mean_rmse = np.mean(rmse_scores)
+      std_rmse = np.std(rmse_scores)
 
-    means_dd7.append(round(mean_rmse))
-    stds_dd7.append(round(std_rmse))
+      means.append(round(mean_rmse))
+      stds.append(round(std_rmse))
 
-fig, ax = plt.subplots()
-createtable(ax, 'rmse', alpharange, means_dd7, stds_dd7)
-plt.get_current_fig_manager().window.showMaximized()
-plt.tight_layout()
-plt.show()
+  fig, ax = plt.subplots()
+  createtable(ax, 'rmse', alpharange, means, stds)
+  fig.suptitle(title)
+  plt.get_current_fig_manager().window.showMaximized()
+  plt.tight_layout()
+  plt.show()
 
-
+evaluate('dd5', X_train_dd5, y_train_dd5)
+evaluate('dd7', X_train_dd7, y_train_dd7)
 
 
   

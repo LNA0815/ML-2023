@@ -122,7 +122,7 @@ from sklearn.model_selection import train_test_split
 To change the test size, change the variable "test_size":
 
 """
-test_size = 0.1
+test_size = 0.2
 
 X_train_dd5, X_test_dd5, y_train_dd5, y_test_dd5 = train_test_split(X_dd5, labels, test_size=test_size, random_state=42)
 
@@ -155,8 +155,6 @@ from sklearn.linear_model import Lasso
 #%% Define variables
 threshold_corr = np.arange(0.4, 0.6, 0.01)  # range of threshold from 0.1 to 1
 th = []   # Array for threshold to plot it in table
-means_dd7 = []
-stds_dd7 = []
 shapes = []
 cv = 5
 
@@ -187,54 +185,59 @@ def createtable(ax, name, th, value_pcr, value_lasso, shape):
 
     #%%
 
+def evaluate(title, X_train):
+  means = []
+  stds = []
+  shapes = []
+  th = []
+  #for every variance 
+  #for desired_total_variance in variance:
+  for threshold in threshold_corr:
 
-#for every variance 
-#for desired_total_variance in variance:
-for threshold in threshold_corr:
-  
-  #%% Removing Correlated Features
-  # Berechnen der Korrelationsmatrix
-  correlation_matrix = np.corrcoef(X_train_dd7, rowvar=False)
+    #%% Removing Correlated Features
+    # Berechnen der Korrelationsmatrix
+    correlation_matrix = np.corrcoef(X_train, rowvar=False)
 
-  # In rowvar=False, die Merkmale sind in den Spalten des Arrays
+    # In rowvar=False, die Merkmale sind in den Spalten des Arrays
 
-  # Erzeugen einer booleschen Maske für die obere Dreiecksmatrix der Korrelationsmatrix
-  mask = np.triu(np.ones_like(correlation_matrix), k=1).astype(bool)
+    # Erzeugen einer booleschen Maske für die obere Dreiecksmatrix der Korrelationsmatrix
+    mask = np.triu(np.ones_like(correlation_matrix), k=1).astype(bool)
 
-  # Finden von stark korrelierten Merkmalspaaren
-  highly_correlated = np.where((correlation_matrix > threshold) & (correlation_matrix < 1.0))
+    # Finden von stark korrelierten Merkmalspaaren
+    highly_correlated = np.where((correlation_matrix > threshold) & (correlation_matrix < 1.0))
 
-  # Entfernen der stark korrelierten Merkmale (falls gewünscht)
-  X_train_corr_dd7 = np.delete(X_train_dd7, highly_correlated[0], axis=1)
-  X_test_corr_dd7 = np.delete(X_test_dd7, highly_correlated[0], axis=1)
+    # Entfernen der stark korrelierten Merkmale (falls gewünscht)
+    X_train_corr = np.delete(X_train, highly_correlated[0], axis=1)
 
-  print(X_train_corr_dd7.shape)
-  if X_train_corr_dd7.shape[1] > 0:
-    th.append(round(threshold, 2))
+    print(X_train_corr.shape)
+    if X_train_corr.shape[1] > 0:
+      th.append(round(threshold, 2))
 
-    #%%   # #cross-validation
-    # Erstellen eines Modells (z.B. lineare Regression)
-    model = LinearRegression()
+      #%%   # #cross-validation
+      # Erstellen eines Modells (z.B. lineare Regression)
+      model = LinearRegression()
 
-    # Führen Sie eine Kreuzvalidierung durch, z.B. mit 5 Folds
-    scores = cross_val_score(model, X_train_corr_dd7, y_train_dd7, cv=cv, scoring='neg_mean_squared_error')
+      # Führen Sie eine Kreuzvalidierung durch, z.B. mit 5 Folds
+      scores = cross_val_score(model, X_train_corr, y_train_dd7, cv=cv, scoring='neg_mean_squared_error')
 
-    # Da die Kreuzvalidierung 'neg_mean_squared_error' verwendet, müssen wir die Werte negieren
-    mse_scores = -scores
+      # Da die Kreuzvalidierung 'neg_mean_squared_error' verwendet, müssen wir die Werte negieren
+      mse_scores = -scores
 
-    # Berechnen des Durchschnitts und der Standardabweichung der MSE-Werte
-    mean_mse = np.mean(mse_scores)
-    std_mse = np.std(mse_scores)
-    shapes.append(X_train_corr_dd7.shape)
+      # Berechnen des Durchschnitts und der Standardabweichung der MSE-Werte
+      mean_mse = np.mean(mse_scores)
+      std_mse = np.std(mse_scores)
+      shapes.append(X_train_corr.shape)
 
-    means_dd7.append(round(mean_mse))
-    stds_dd7.append(round(std_mse))
+      means.append(round(mean_mse))
+      stds.append(round(std_mse))
 
-fig, ax = plt.subplots()
-createtable(ax, 'mse', th, means_dd7, stds_dd7, shapes)
-plt.get_current_fig_manager().window.showMaximized()
-plt.tight_layout()
-plt.show()
+  fig, ax = plt.subplots()
+  createtable(ax, 'mse', th, means, stds, shapes)
+  fig.suptitle(title)
+  plt.get_current_fig_manager().window.showMaximized()
+  plt.tight_layout()
+  plt.show()
 
-
+evaluate('dd5', X_train_dd5)
+evaluate('dd7', X_train_dd7)
   
